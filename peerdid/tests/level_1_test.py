@@ -4,7 +4,7 @@ import pytest
 from .. import is_valid_peer_did, compare_peer_dids, is_reserved_peer_did
 
 data_folder = os.path.normpath(os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                            '../../../peer-did-method-spec/test-data/level-1'))
+                                            'compliance/level-1'))
 
 
 def get_file_text(path):
