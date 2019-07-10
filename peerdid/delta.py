@@ -5,6 +5,8 @@ from uuid import uuid4
 
 class Delta:
     def __init__(self, change:str, by, when=None, id=None):
+        if isinstance(change, bytes):
+            change = change.decode('utf-8')
         self.change = change
         self.by = by
         if when is None:
