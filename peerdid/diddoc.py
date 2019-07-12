@@ -4,6 +4,7 @@ import re
 from typing import Union
 
 from .file import File, canonical_fname
+from .jsondetect import str_seems_like_json, bytes_seems_like_json
 
 
 class DIDDoc:
@@ -200,3 +201,94 @@ def validate(did_doc):
     if not json_dict:
         json_dict = json.loads(did_doc)
     _require(json_dict, '@context', str, regex=re.compile(r'https://w3id.org/did/v1'))
+
+
+def _get_object_subset(set_a, set_b):
+    matched = []
+    i = 0
+    for a_item in set_a:
+        found = False
+        for b_item in set_b:
+            if b_item not in matched:
+                path = _get_path_where_jsonld_objects_differ(a_item, b_item, '')
+                if not path:
+                    matched.append(b_item)
+                    found = True
+                    break
+        if not found:
+            return i, None
+    return None, matched
+
+
+def _get_path_where_jsonld_sets_differ(a_value, b_value, path):
+    if not a_value:
+        if not b_value:
+            return None
+        return path
+    set_of_objects = bool(isinstance(a_value[0], dict))
+    if set_of_objects:
+        gap_idx, matches_in_b = _get_object_subset(a_value, b_value)
+        if gap_idx is not None:
+            return path + '[%d]' % gap_idx
+        # a_value is a subset of b. Prove that b is also a subset of a.
+        # Normally this should be trivial (make sure the lists are the same
+        # length) -- but it's possible for one list to contain the same item
+        # more than once. Since JSON-LD defines sequences as sets, not lists,
+        # comparison has to be a bit more careful.
+        if len(matches_in_b) < len(b_value):
+            remainder = [b_item for b_item in b_value if b_item not in matches_in_b]
+            gap_idx, matches_in_a = _get_object_subset(remainder, a_value)
+            if not matches_in_a:
+                return path
+        return None
+    else:
+        set_of_sets = bool(isinstance(a_value[0], list))
+        if set_of_sets:
+            raise NotImplemented
+        else:
+            if set(a_value) != set(b_value):
+                return path
+
+
+def _get_path_where_jsonld_objects_differ(a, b, path):
+    a_keys = set(a.keys())
+    b_keys = set(b.keys())
+    if a_keys != b_keys:
+        missing = {a for a in a_keys if a not in b_keys}
+        missing = missing.union({b for b in b_keys if b not in a_keys})
+        return path + '.{' + ','.join(missing) + '}'
+    for key, a_value in a.items():
+        subpath = path + '.' + key
+        a_type = type(a_value)
+        b_value = b.get(key)
+        if type(b_value) != a_type:
+            return subpath
+        if a_type is list:
+            diff_path = _get_path_where_jsonld_sets_differ(a_value, b_value, subpath)
+            if diff_path:
+                return diff_path
+        elif a_type is dict:
+            diff_path = _get_path_where_jsonld_objects_differ(a_value, b_value)
+            if diff_path:
+                return diff_path
+        else:
+            if a_value != b_value:
+                return subpath
+
+
+def as_dict(did_doc):
+    if isinstance(did_doc, dict):
+        return did_doc
+    elif isinstance(did_doc, str):
+        if str_seems_like_json(did_doc):
+            return json.loads(did_doc)
+    elif isinstance(did_doc, bytes):
+        if bytes_seems_like_json(did_doc):
+            return json.loads(did_doc)
+    raise ValueError("DID doc isn't JSON.")
+
+
+def get_path_where_diddocs_differ(did_doc_1, did_doc_2):
+    did_doc_1 = as_dict(did_doc_1)
+    did_doc_2 = as_dict(did_doc_2)
+    return _get_path_where_jsonld_objects_differ(did_doc_1, did_doc_2, '')

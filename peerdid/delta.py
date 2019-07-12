@@ -3,20 +3,8 @@ from datetime import datetime
 import hashlib
 import json
 from typing import Union, List
-from uuid import uuid4
 
-
-def _str_seems_like_json(txt):
-    for c in txt:
-        if c not in "\r\n\t ":
-            return c == '{'
-    return False
-
-def _bytes_seems_like_json(binary):
-    for b in binary:
-        if b not in [13, 10, 9, 32]:
-            return b == 123
-    return False
+from .jsondetect import str_seems_like_json, bytes_seems_like_json
 
 
 def _is_base64(txt):
@@ -36,14 +24,14 @@ class Delta:
     """
     def __init__(self, change_json: Union[str, bytes, dict], by: List, when: str = None):
         if isinstance(change_json, str):
-            if _str_seems_like_json(change_json):
+            if str_seems_like_json(change_json):
                 self._change = base64.b64encode(change_json.encode('utf-8')).decode('ascii')
             elif _is_base64(change_json):
                 self._change = change_json
             else:
                 raise _bad_json
         elif isinstance(change_json, bytes):
-            if _bytes_seems_like_json(change_json):
+            if bytes_seems_like_json(change_json):
                 self._change = base64.b64encode(change_json).decode('ascii')
             elif _is_base64(change_json):
                 self._change = change_json.decode('ascii')

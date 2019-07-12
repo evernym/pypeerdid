@@ -2,16 +2,13 @@ import os
 
 from .diddoc import DIDDoc, get_predefined
 from .delta import Delta
+from .file import File, canonical_fname
 from . import is_valid_peer_did, is_reserved_peer_did
-
-
-def _fname_for_did(folder, did):
-    return os.path.join(folder, did[13:] + '-deltas.txt')
 
 
 class Repo:
     """
-    Backing storage for all known peer DIDs.
+    Backing storage for a collection of peer DIDs.
     """
     def __init__(self, path):
         assert os.path.isdir(path)
@@ -20,7 +17,10 @@ class Repo:
 
     def new_doc(self, genesis_doc, signatures=[]):
         delta = Delta(genesis_doc, signatures)
-        doc = DIDDoc(delta)
+        path = os.path.join(self.path, canonical_fname(delta.hash))
+        f = File(path)
+        f.append(delta)
+        return f.did
 
 
     def resolve(self, did, as_of_time=None):
@@ -28,7 +28,7 @@ class Repo:
             if is_reserved_peer_did(did):
                 return get_predefined(did[13])
             else:
-                path = _fname_for_did(did)
+                path = os.path.join(self.path, canonical_fname(did))
                 if os.path.isfile(path):
                     doc = DIDDoc(path)
                     return doc.resolve(as_of_time)
