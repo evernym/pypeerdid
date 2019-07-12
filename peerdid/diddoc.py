@@ -276,7 +276,7 @@ def _get_path_where_jsonld_objects_differ(a, b, path):
                 return subpath
 
 
-def _as_dict(did_doc):
+def as_dict(did_doc):
     if isinstance(did_doc, dict):
         return did_doc
     elif isinstance(did_doc, str):
@@ -289,6 +289,6 @@ def _as_dict(did_doc):
 
 
 def get_path_where_diddocs_differ(did_doc_1, did_doc_2):
-    did_doc_1 = _as_dict(did_doc_1)
-    did_doc_2 = _as_dict(did_doc_2)
+    did_doc_1 = as_dict(did_doc_1)
+    did_doc_2 = as_dict(did_doc_2)
     return _get_path_where_jsonld_objects_differ(did_doc_1, did_doc_2, '')
