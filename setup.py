@@ -18,7 +18,7 @@ README = (HERE / "README.md").read_text()
 # This call to setup() does all the work
 setup(
     name="peerdid",
-    version="0.1.1",
+    version="0.1.2",
     description="Python Peer DID Library",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -38,5 +38,5 @@ setup(
     packages=["peerdid"],
     #include_package_data=True,      -- write a MANIFEST.in with glob patterns if uncommented
     install_requires=[],
-    download_url='https://github.com/evernym/pypeerdid/archive/v0.1.1.tar.gz',
+    download_url='https://github.com/evernym/pypeerdid/archive/v0.1.2.tar.gz',
 )
