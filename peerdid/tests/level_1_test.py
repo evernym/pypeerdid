@@ -1,3 +1,7 @@
+# Software that supports Level 1 of the peer DID spec is able to recognize peer DIDs,
+# and to compare, validate, and handle them correctly. These features are directly
+# observable in our peerdid package.
+
 import os
 import pytest
 

@@ -73,3 +73,22 @@ def test_validate_catches_errors():
     for invalid_doc in invalid_docs:
         with pytest.raises(BaseException):
             validate(invalid_doc)
+
+
+def test_get_path_where_diddocs_differ():
+    doc_0 = get_predefined('0')
+    doc_1 = get_predefined('1')
+    doc_2 = json.loads(doc_0)
+    doc_2['publicKey'].append({'abc':1})
+    doc_3 = json.loads(doc_0)
+    doc_3['publicKey'][0]['abc'] = 1
+    assert get_path_where_diddocs_differ(doc_0, doc_0) is None
+    assert get_path_where_diddocs_differ(doc_0, doc_1) == '.id'
+    assert get_path_where_diddocs_differ(doc_0, doc_2) == '.publicKey'
+    assert get_path_where_diddocs_differ(doc_0, doc_3) == '.publicKey[0]'
+
+
+def test_resolve(scratch_space):
+    dd = make_genesis_doc(scratch_space.name, BOGUS_CHANGE)
+    assert get_path_where_diddocs_differ(dd.resolve(),
+        '{"id": "did:peer:11-1345d1a0d64a0774071b3ce8f6799d14e26e371decd48afc542a168de3947b48", "say": "hello, world"}') is None
