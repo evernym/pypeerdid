@@ -2,36 +2,64 @@ import argparse
 import os
 import re
 import sys
-import threading
 import time
 import traceback
 import types
 
 import agent
 import console
+import cmdlog
 
-agent_cmd_pat = re.compile(r'([a-z][1-9]):\s*(.+)', re.I)
+
+agent_cmd_pat = re.compile(r'\s*([a-z]\.[1-9])\s*:\s*(.+)', re.I)
 should_autogossip = False
-all_agents = []
 
 
 def quit():
+    """
+    quit              -- exit simulation
+    """
     sys.exit(0)
 
 
 def autogossip(*args):
+    """
+    autogossip on|off -- simulate background conversation
+    """
     mode = 'on' if (args and args[0].lower() == 'on') else 'off'
-    stdout.say('Turning autogossip ' + mode)
+    stdout.say('Turning autogossip %s.' % mode)
     global should_autogossip
-    should_autogossip = True if mode == 'on' else 'off'
+    should_autogossip = bool(mode == 'on')
 
 
-def check():
-    pass
+def check(*args):
+    """
+    check             -- see whether all agents have synchronized state
+    """
+    agents_by_state = {}
+    for a in agent.Agent.all:
+        this_state = a.all_states
+        if this_state not in agents_by_state:
+            agents_by_state[this_state] = [a]
+        else:
+            agents_by_state[this_state].append(a)
+    if len(agents_by_state) == 1:
+        stdout.say('All agents agree that state is %s.' % this_state)
+    else:
+        report = 'Agents are not fully synchronized.'
+        for key, agents in agents_by_state.items():
+            report += '\n   %d agents see state as %s: %s' % (len(agents), key, ', '.join([a.id for a in agents]))
+        stdout.say(report)
 
 
-def help():
-    print('Commands = ' + ', '.join(funcs) + ' OR A1: change')
+def help(*args):
+    func_docs = [globals()[x].__doc__.strip() for x in funcs if x != 'help']
+    method_docs = [agent.Agent.__dict__[x].__doc__.strip() for x in agent.Agent.commands]
+    stdout.say("""General Commands
+    %s
+
+Agent-specific Commands
+    %s""" % ('\n    '.join(func_docs), '\n    '.join(method_docs)))
 
 
 funcs = [x for x in globals().keys() if type(globals()[x]) == types.FunctionType]
@@ -40,26 +68,14 @@ funcs = [x for x in globals().keys() if type(globals()[x]) == types.FunctionType
 stdout = console.Console()
 
             
-class Commands:
-    def __init__(self):
-        self.items = []
-        self.lock = threading.Lock()
-
-    def __enter__(self):
-        self.lock.acquire()
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.lock.release()
-
-
 def abort(msg):
     stdout.say('Error: ' + msg)
     sys.exit(1)
 
 
 def thread_main(agent):
+    global should_autogossip
     try:
-        agent.say('Started.')
         while True:
             time.sleep(0.33)
             with agent.cmds:
@@ -100,9 +116,10 @@ def dispatch(cmd):
     cmd = args[0].replace('()', '')
     args = args[1:]
     if cmd not in funcs:
-        abort('No such function ("' + cmd + '").')
-    func = globals()[cmd]
-    func(*args)
+        stdout.say('Huh? Try "help".')
+    else:
+        func = globals()[cmd]
+        func(*args)
 
 
 def main(cmds):
@@ -113,6 +130,8 @@ def main(cmds):
             if m:
                 with cmds:
                     cmds.items.append(m.group(1).upper() + ': ' + m.group(2))
+            elif ':' in cmd:
+                stdout.say('No such agent.')
             else:
                 dispatch(cmd)
             time.sleep(1)
@@ -123,10 +142,12 @@ def main(cmds):
 if __name__ == '__main__':
     syntax = argparse.ArgumentParser(description='Simulate the peer DID sync protocol.')
     syntax.add_argument('participants', nargs=argparse.REMAINDER, help="""
-Specs for participants, such as: "A1 A2 A3-A1 B1 B2-A2,A3". A and B are agent identifiers for Alice and Bob.
-Digits are agent numbers. The minus notation says that a particular agent cannot talk to the agents that are
-subtracted.""")
+Specs for participants, such as: "A.1 A.2%%x A.3-A.1 B.1%%yz B.2-A.2,A.3". A and B are agent identifiers
+for Alice and Bob; use any letters you like. They are not case-sensitive. Dotted notation (.1, .2, etc)
+identifies specific agents. %%letters notation puts the agents into one or more permission group, each
+identified by a letter--so B.1%%yz puts B.1 into the 'y' and the 'z' permission groups. The minus
+notation says that a particular agent cannot talk to the agents that are subtracted.""")
     args = syntax.parse_args()
-    cmds = Commands()
+    cmds = cmdlog.CmdLog()
     all_agents = get_agents(args.participants, cmds)
     main(cmds)

@@ -3,23 +3,25 @@ import re
 import threading
 import time
 
-valid_spec_pat = re.compile('[A-Z][1-9](-[A-Z][1-9](,[A-Z][1-9])*)?')
+valid_spec_pat = re.compile(r'[A-Z]\.[1-9](?:%([A-Z]+))?(-[A-Z]\.[1-9](,[A-Z]\.[1-9])*)?')
 
 
 class Agent:
     all = []
+
     def __init__(self, spec, cmds, main, stdout):
-        self.stdout = stdout
         spec = spec.upper()
         m = valid_spec_pat.match(spec)
         if not m:
             raise Exception('Bad spec.')
-        self.cmds = cmds
         self.party = spec[0]
-        self.num = spec[1]
-        self.cant_reach = m.group(1)[1:].split(',') if m.group(1) else []
+        self.num = spec[2]
+        self.groups = m.group(1).lower() if m.group(1) else ''
+        self.cant_reach = m.group(2)[1:].split(',') if m.group(2) else []
         self.cmd_idx = 0
         self.states = {}
+        self.stdout = stdout
+        self.cmds = cmds
         self.thread = threading.Thread(target=main, args=(self,), daemon=True)
         self.thread.start()
         Agent.all.append(self)
@@ -28,27 +30,30 @@ class Agent:
         for p in parties:
             self.states[p] = ['!' + p]
 
-    def simulate_change(self):
-        change = hex(random.randint(256, 256*256))[2:]
-        self.append_state(change)
-        self.say('Created delta ' + change)
-        return change
+    def change(self, suffix=None):
+        """
+        X9: change [N@M]  -- generate a state change, optionally requiring N signatures from group M
+        """
+        ch = hex(random.randint(256, 256*256))[2:]
+        if suffix:
+            ch += suffix
+        self.append_state(ch)
+        self.say('Created delta %s. I now see %s.' % (ch, self.all_states))
+        self.broadcast(self.party + '+' + ch)
 
     def next(self):
         cmd = self.cmds.items[self.cmd_idx]
         if cmd.startswith(self.id):
-            rest = cmd[3:].lstrip()
+            rest = cmd[4:].lstrip()
             if rest.startswith('change'):
-                change = self.simulate_change()
-                self.say('OK, added change. I now see ' + self.all_states)
-                self.broadcast(self.party + '+' + change)
+                self.change(rest[6:].lstrip())
             elif rest.startswith('state'):
-                self.say('OK; I see ' + self.all_states)
+                self.state()
             elif rest.startswith('gossip'):
-                self.say('OK, gossipping.')
+                self.say('Gossipping.')
                 self.gossip()
             else:
-                self.say('Huh?')
+                self.say('Huh? Try "help".')
         self.cmd_idx += 1
 
     def say(self, msg):
@@ -56,16 +61,31 @@ class Agent:
 
     @property
     def all_states(self):
-        return '; '.join([x + '=' + self.state(x) for x in sorted(self.states.keys())])
+        return '; '.join([x + '=' + self.get_state(x) for x in sorted(self.states.keys())])
 
-    def state(self, party=None):
+    def state(self):
+        """
+        X9: state         -- report my state
+        """
+        self.say('OK; I see ' + self.all_states)
+
+    def get_state(self, party=None):
         if party is None:
             party = self.party
         return '.'.join(self.states[party])
 
     @property
+    def full_id(self):
+        id = self.id
+        if self.groups:
+            id += '%' + self.groups
+        return id
+
+
+    @property
     def id(self):
-        return self.party + self.num
+        return self.party + '.' + self.num
+
 
     def __str__(self):
         return self.id
@@ -94,6 +114,9 @@ class Agent:
                 a.receive(msg)
 
     def gossip(self, targets=None):
+        """
+        X9: gossip        -- talk to any agents that X9 can reach
+        """
         if targets is None:
             targets = self.reachable
         if targets:
@@ -101,6 +124,7 @@ class Agent:
                 for key in s.states:
                     for delta in s.states[key]:
                         if delta not in t.states[key]:
+                            s.say('Gossipped %s --%s@%s--> %s' % (s.id, delta, key, t.id))
                             t.receive(key + '+' + delta)
             for t in targets:
                 sync(self, t)
@@ -109,5 +133,6 @@ class Agent:
     def autogossip(self):
         if random.random() < 0.05:
             target = random.choice(self.reachable)
-            self.say('Talking to ' + target.id)
             self.gossip([target])
+
+    commands = ['change', 'state', 'gossip']
