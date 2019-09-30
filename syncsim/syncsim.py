@@ -38,7 +38,7 @@ def check(*args):
     """
     agents_by_state = {}
     for a in agent.Agent.all:
-        this_state = a.all_states
+        this_state = a.all_deltas
         if this_state not in agents_by_state:
             agents_by_state[this_state] = [a]
         else:
