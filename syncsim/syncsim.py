@@ -48,7 +48,7 @@ def check(*args):
     else:
         report = 'Agents are not fully synchronized.'
         for key, agents in agents_by_state.items():
-            report += '\n   %d agents see state as %s: %s' % (len(agents), key, ', '.join([a.id for a in agents]))
+            report += '\n   %d agents see state as: %s  (%s)' % (len(agents), key, ', '.join([a.id for a in agents]))
         stdout.say(report)
 
 
@@ -142,10 +142,10 @@ def main(cmds):
 if __name__ == '__main__':
     syntax = argparse.ArgumentParser(description='Simulate the peer DID sync protocol.')
     syntax.add_argument('participants', nargs=argparse.REMAINDER, help="""
-Specs for participants, such as: "A.1 A.2%%x A.3-A.1 B.1%%yz B.2-A.2,A.3". A and B are agent identifiers
+Specs for participants, such as: "A.1 A.2@x A.3-A.1 B.1@yz B.2-A.2,A.3". A and B are agent identifiers
 for Alice and Bob; use any letters you like. They are not case-sensitive. Dotted notation (.1, .2, etc)
-identifies specific agents. %%letters notation puts the agents into one or more permission group, each
-identified by a letter--so B.1%%yz puts B.1 into the 'y' and the 'z' permission groups. The minus
+identifies specific agents. @letters notation puts the agents into one or more permission group, each
+identified by a letter--so B.1@yz puts B.1 into the 'y' and the 'z' permission groups. The minus
 notation says that a particular agent cannot talk to the agents that are subtracted.""")
     args = syntax.parse_args()
     cmds = cmdlog.CmdLog()
