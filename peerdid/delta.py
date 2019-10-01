@@ -20,8 +20,8 @@ _bad_json = ValueError('change should be JSON str/bytes/dict, or base64 text.')
 
 class Delta:
     """
-    An immutable {change, by, when} object. Also has a .hash property that uniquely
-    identifies its change.
+    An immutable {change, by, when} object. Also has an .encnumbasis property that uniquely
+    identifies it.
     """
     def __init__(self, change_json: Union[str, bytes, dict], by: List, when: str = None):
         if isinstance(change_json, str):
