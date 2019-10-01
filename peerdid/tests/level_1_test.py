@@ -83,11 +83,11 @@ def test_compare_gt():
 
 
 def test_is_reserved():
-    chars = "0123456789abcdefx"
+    chars = "123456789abcdef"
     for i in range(len(chars) - 1):
         c = chars[i]
-        did = "did:peer:11-" + 64*c
+        did = "did:peer:1z" + 45*c
         assert is_reserved_peer_did(did)
-        assert is_reserved_peer_did(did[:13] + did[13:].upper())
+        assert is_reserved_peer_did(did[:11] + did[11:].upper())
         assert is_reserved_peer_did(did[:-5] + did[-5:].upper())
         assert not is_reserved_peer_did(did[:-1] + chars[i + 1])

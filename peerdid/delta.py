@@ -1,4 +1,5 @@
 import base64
+import base58
 from datetime import datetime
 import hashlib
 import json
@@ -19,8 +20,8 @@ _bad_json = ValueError('change should be JSON str/bytes/dict, or base64 text.')
 
 class Delta:
     """
-    An immutable {change, by, when} object. Also has a .hash property that uniquely
-    identifies its change.
+    An immutable {change, by, when} object. Also has an .encnumbasis property that uniquely
+    identifies it.
     """
     def __init__(self, change_json: Union[str, bytes, dict], by: List, when: str = None):
         if isinstance(change_json, str):
@@ -50,8 +51,16 @@ class Delta:
     @property
     def hash(self) -> str:
         if not self._hash:
-            self._hash = hashlib.sha256(self.change_json_bytes).hexdigest()
+            self._hash = hashlib.sha256(self.change_json_bytes).digest()
         return self._hash
+
+    @property
+    def hexhash(self) -> str:
+        return hex(self.hash)
+
+    @property
+    def encnumbasis(self) -> str:
+        return base58.b58encode(b'\x12' + self.hash).decode('ascii')
 
     @property
     def change(self) -> str:

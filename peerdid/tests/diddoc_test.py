@@ -54,7 +54,7 @@ def test_second_delta_doesnt_change_did_value(hw):
 
 def test_serialize(scratch_file):
     dd1 = DIDDoc(scratch_file)
-    change1 = get_predefined('0').encode("utf-8")
+    change1 = get_predefined('1').encode("utf-8")
     delta = Delta(change1, [])
     dd1.file.append(delta)
     dd2 = DIDDoc(scratch_file.path)
@@ -62,7 +62,7 @@ def test_serialize(scratch_file):
 
 
 def test_predefined_is_valid():
-    for which in '01234d':
+    for which in '12345d':
         validate(get_predefined(which))
 
 
@@ -76,7 +76,7 @@ def test_validate_catches_errors():
 
 
 def test_get_path_where_diddocs_differ():
-    doc_0 = get_predefined('0')
+    doc_0 = get_predefined('2')
     doc_1 = get_predefined('1')
     doc_2 = json.loads(doc_0)
     doc_2['publicKey'].append({'abc':1})
@@ -91,4 +91,4 @@ def test_get_path_where_diddocs_differ():
 def test_resolve(scratch_space):
     dd = make_genesis_doc(scratch_space.name, BOGUS_CHANGE)
     assert get_path_where_diddocs_differ(dd.resolve(),
-        '{"id": "did:peer:11-1345d1a0d64a0774071b3ce8f6799d14e26e371decd48afc542a168de3947b48", "say": "hello, world"}') is None
+        '{"id": "did:peer:1z6NRwAcQAJP8iFvVT3XqYcp97vtcuChXu9EzbZ9zJcMqdq", "say": "hello, world"}') is None

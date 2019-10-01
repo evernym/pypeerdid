@@ -14,10 +14,9 @@ class Repo:
         assert os.path.isdir(path)
         self.path = os.path.normpath(path)
 
-
     def new_doc(self, genesis_doc, signatures=[]):
         delta = Delta(genesis_doc, signatures)
-        path = os.path.join(self.path, canonical_fname(delta.hash))
+        path = os.path.join(self.path, canonical_fname(delta.encnumbasis))
         f = File(path)
         f.append(delta)
         return f.did

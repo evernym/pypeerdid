@@ -29,7 +29,7 @@ class DIDDoc:
 
     def append(self, delta):
         if not self._file:
-            self._file = File(os.path.join(self._folder, canonical_fname(delta.hash)))
+            self._file = File(os.path.join(self._folder, canonical_fname(delta.encnumbasis)))
         self._file.append(delta)
 
     @property
@@ -99,7 +99,7 @@ class DIDDoc:
 _predefined_diddoc_template = """\
 {
     "@context": "https://w3id.org/did/v1",
-    "id": "did:peer:11-%s",
+    "id": "did:peer:1z%s",
     "service": [{
         "type": "did-communication",
         "serviceEndpoint": "https://localhost:12345"
@@ -130,8 +130,8 @@ _predefined_diddoc_template = """\
 
 def get_predefined(which) -> str:
     which = which[0].lower()
-    if which in '01234d':
-        return _predefined_diddoc_template % (which*64)
+    if which in '12345d':
+        return _predefined_diddoc_template % (which*45)
     elif which == 'c':
         return 'invalid DID doc'
     elif which == 'e':

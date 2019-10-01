@@ -2,6 +2,7 @@ import os
 
 from .delta import Delta
 
+
 class FileMisuseError(IOError):
     def __init__(self, msg):
         IOError.__init__(self, msg)
@@ -57,11 +58,11 @@ class File:
         if self._did is None:
             g = self.genesis
             if g:
-                self._did = 'did:peer:11-' + g.hash
+                self._did = 'did:peer:1z' + g.encnumbasis
         return self._did
 
 
 def canonical_fname(did_or_hash):
-    if did_or_hash.startswith('did:peer:11-'):
-        did_or_hash = did_or_hash[12:]
+    if did_or_hash.startswith('did:peer:1z'):
+        did_or_hash = did_or_hash[11:]
     return did_or_hash + ".ddd"
