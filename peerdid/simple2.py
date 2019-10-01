@@ -29,7 +29,7 @@ def get_did_from_doc(stored_variant_did_doc_bytes):
     # 2. Input validation (make sure DID doc is valid, incl requiring a key with the 'register'
     #    privilege).
 
-    return base58.b58encode(hashlib.sha256(stored_variant_did_doc_bytes).digest()).encode('ascii')
+    return 'did:peer:1z' + base58.b58encode(b'\x12' + hashlib.sha256(stored_variant_did_doc_bytes).digest()).encode('ascii')
 
 
 def save_did(stored_variant_did_doc_bytes):
